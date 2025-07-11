@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vérification paiement...</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; text-align: center; }
+    .status { background: white; padding: 20px; border-radius: 10px; display: inline-block; margin-top: 50px; }
+  </style>
+</head>
+<body>
+  <div class="status">
+    <h3>Vérification en cours...</h3>
+    <p id="statusText">Veuillez patienter...</p>
+  </div>
+
+  <script>
+    const VERIFY_URL = "https://api.feexpay.me/api/transactions/public/single/status/";
+    const BEARER_TOKEN = "Bearer fp_HHNoQGt9Vn8KpZoLaBkG3uEeKpLUYBaHUZIZXJE3Xgv0OKG2tK3A7PtlytctikrJ";
+
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference");
+    const paymentUrl = params.get("url");
+
+    if (paymentUrl) {
+      window.open(paymentUrl, "_blank");
+    }
+
+    const statusText = document.getElementById("statusText");
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(VERIFY_URL + reference, {
+          headers: { "Authorization": BEARER_TOKEN }
+        });
+        const data = await res.json();
+        const status = data.data?.status;
+
+        if (status) {
+          statusText.innerText = `Statut actuel : ${status}`;
+
+          if (status === "SUCCESS" || status === "FAILED") {
+            clearInterval(interval);
+
+            // Redirection vers page d'accueil avec statut
+            window.opener.location.href = `index.html?status=${status}&reference=${reference}`;
+            window.close();
+          }
+        }
+      } catch (err) {
+        statusText.innerText = "Erreur de vérification.";
+      }
+    }, 5000);
+  </script>
+</body>
+</html>
