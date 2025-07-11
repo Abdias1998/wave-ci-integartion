@@ -26,6 +26,7 @@
     const BEARER_TOKEN = "Bearer fp_HHNoQGt9Vn8KpZoLaBkG3uEeKpLUYBaHUZIZXJE3Xgv0OKG2tK3A7PtlytctikrJ";
 
     let intervalId;
+    let timeoutId;
 
     async function initiatePayment() {
       const payload = {
@@ -67,6 +68,7 @@
       div.style.display = "block";
       div.innerHTML = `Paiement en cours...`;
 
+      // Vérification toutes les 5 secondes
       intervalId = setInterval(async () => {
         try {
           const res = await fetch(VERIFY_URL + reference, {
@@ -80,14 +82,22 @@
 
           if (status) {
             div.innerHTML = `<strong>Statut :</strong> ${status}<br><strong>Référence :</strong> ${reference}`;
+
             if (status === "SUCCESS" || status === "FAILED") {
               clearInterval(intervalId);
+              clearTimeout(timeoutId); // Stoppe le timeout si le paiement est terminé avant
             }
           }
         } catch (err) {
           div.innerHTML = "Erreur lors de la vérification du statut.";
         }
       }, 5000);
+
+      // Timeout : après 2 minutes, si rien n’est revenu
+      timeoutId = setTimeout(() => {
+        clearInterval(intervalId);
+        div.innerHTML = `<strong>Statut :</strong> ÉCHEC (aucune confirmation après 2 minutes)<br><strong>Référence :</strong> ${reference}`;
+      }, 120000); // 2 minutes = 120000 ms
     }
   </script>
 </body>
