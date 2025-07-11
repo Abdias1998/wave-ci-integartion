@@ -5,31 +5,15 @@
   <title>Paiement Wave - FeexPay</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    label { display: block; margin-top: 10px; }
-    input { width: 100%; padding: 10px; margin-top: 5px; }
-    button { margin-top: 15px; padding: 10px; width: 100%; background-color: #00aaff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center; }
+    button { padding: 12px 20px; background-color: #00aaff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
     .result { margin-top: 20px; background: #e7f3ff; padding: 10px; border-radius: 5px; word-break: break-word; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Paiement avec Wave</h2>
-
-    <label>Téléphone *</label>
-    <input type="text" id="phoneNumber" placeholder="Ex: 229XXXXXXXX">
-
-    <label>Montant *</label>
-    <input type="number" id="amount" placeholder="Montant minimum 100">
-
-    <label>Prénom</label>
-    <input type="text" id="firstName" placeholder="FeexPay">
-
-    <label>Nom</label>
-    <input type="text" id="lastName" placeholder="FeexPay">
-
+    <h2>Paiement Wave avec FeexPay</h2>
     <button onclick="initiatePayment()">Payer avec Wave</button>
-
     <div id="statusResult" class="result" style="display:none;"></div>
   </div>
 
@@ -44,22 +28,12 @@
     let intervalId;
 
     async function initiatePayment() {
-      const phoneNumber = document.getElementById("phoneNumber").value;
-      const amount = parseInt(document.getElementById("amount").value);
-      const firstName = document.getElementById("firstName").value || "FeexPay";
-      const lastName = document.getElementById("lastName").value || "FeexPay";
-
-      if (!phoneNumber || isNaN(amount) || amount < 100) {
-        alert("Veuillez entrer un numéro valide et un montant d’au moins 100.");
-        return;
-      }
-
       const payload = {
-        phoneNumber,
-        amount,
+        phoneNumber: "2250546952156",
+        amount: 100,
         shop: SHOP_ID,
-        firstName,
-        lastName,
+        firstName: "FeexPay",
+        lastName: "FeexPay",
         return_url: RETURN_URL,
         description: DESCRIPTION
       };
@@ -77,20 +51,14 @@
         const data = await response.json();
 
         if (data && data.payment_url && data.reference) {
-          const paymentUrl = data.payment_url;
-          const reference = data.reference;
-
-          // Ouvrir dans un nouvel onglet
-          window.open(paymentUrl, '_blank');
-
-          // Lancer la vérification sur cette même page
-          startVerification(reference);
+          window.open(data.payment_url, "_blank");
+          startVerification(data.reference);
         } else {
           alert("Erreur lors de la création du paiement.");
         }
       } catch (err) {
-        alert("Erreur réseau ou serveur.");
         console.error(err);
+        alert("Erreur réseau ou serveur.");
       }
     }
 
@@ -112,7 +80,6 @@
 
           if (status) {
             div.innerHTML = `<strong>Statut :</strong> ${status}<br><strong>Référence :</strong> ${reference}`;
-
             if (status === "SUCCESS" || status === "FAILED") {
               clearInterval(intervalId);
             }
