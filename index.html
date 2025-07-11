@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Paiement avec Wave - FeexPay</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 10px; }
+    input { width: 100%; padding: 10px; margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px; width: 100%; background-color: #00aaff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .result { margin-top: 20px; background: #e7f3ff; padding: 10px; border-radius: 5px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Paiement avec Wave</h2>
+
+    <label>Téléphone *</label>
+    <input type="text" id="phoneNumber" placeholder="Ex: 229XXXXXXXX">
+
+    <label>Montant *</label>
+    <input type="number" id="amount" placeholder="Montant minimum 100">
+
+    <label>Prénom</label>
+    <input type="text" id="firstName" placeholder="FeexPay">
+
+    <label>Nom</label>
+    <input type="text" id="lastName" placeholder="FeexPay">
+
+    <button onclick="initiatePayment()">Payer avec Wave</button>
+
+    <div id="result" class="result" style="display:none;"></div>
+    <div id="status" class="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    const API_URL = "https://api.feexpay.me/api/transactions/public/requesttopay/wave_ci";
+    const VERIFY_URL = "https://api.feexpay.me/api/transactions/public/single/status/";
+    const SHOP_ID = "671a774c706593edb3dc4ab2";
+    const RETURN_URL = "http://feexpay.me";
+    const DESCRIPTION = "Achat via FeexPay Wave";
+    const BEARER_TOKEN = "Bearer fp_HHNoQGt9Vn8KpZoLaBkG3uEeKpLUYBaHUZIZXJE3Xgv0OKG2tK3A7PtlytctikrJ"; // remplace par ton vrai token
+
+    let currentReference = null;
+    let intervalId = null;
+
+    async function initiatePayment() {
+      const phoneNumber = document.getElementById("phoneNumber").value;
+      const amount = parseInt(document.getElementById("amount").value);
+      const firstName = document.getElementById("firstName").value || "FeexPay";
+      const lastName = document.getElementById("lastName").value || "FeexPay";
+
+      if (!phoneNumber || isNaN(amount) || amount < 100) {
+        alert("Veuillez renseigner un numéro valide et un montant d’au moins 100.");
+        return;
+      }
+
+      const payload = {
+        phoneNumber,
+        amount,
+        shop: SHOP_ID,
+        firstName,
+        lastName,
+        return_url: RETURN_URL,
+        description: DESCRIPTION
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": BEARER_TOKEN
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data  && data.payment_url) {
+          const resultDiv = document.getElementById("result");
+          resultDiv.style.display = "block";
+          resultDiv.innerHTML = `<strong>URL de paiement :</strong><br><a href="${data.payment_url}" target="_blank">${data.payment_url}</a>`;
+
+          currentReference = data.reference;
+          startVerification(currentReference);
+        } else {
+          alert("Erreur lors de la création du paiement.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Une erreur est survenue.");
+      }
+    }
+
+    function startVerification(reference) {
+      clearInterval(intervalId);
+      const statusDiv = document.getElementById("status");
+      statusDiv.style.display = "block";
+
+      intervalId = setInterval(async () => {
+        try {
+          const res = await fetch(VERIFY_URL + reference, {
+            headers: {
+              "Authorization": BEARER_TOKEN
+            }
+          });
+          const statusData = await res.json();
+          statusDiv.innerHTML = `<strong>Statut :</strong> ${statusData.data?.status || 'En attente...'}`;
+
+          if (statusData.data?.status === "SUCCESS" || statusData.data?.status === "FAILED") {
+            clearInterval(intervalId);
+          }
+        } catch (err) {
+          statusDiv.innerHTML = "Erreur lors de la vérification du statut.";
+        }
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
