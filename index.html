@@ -83,10 +83,10 @@
           if (status) {
             div.innerHTML = `<strong>Statut :</strong> ${status}<br><strong>Référence :</strong> ${reference}`;
 
-            if (status === "SUCCESS" || status === "FAILED") {
+            if (status === "SUCCESSFUL" || status === "FAILED") {
               clearInterval(intervalId);
               clearTimeout(timeoutId); // Stoppe le timeout si le paiement est terminé avant
-            }
+            } 
           }
         } catch (err) {
           div.innerHTML = "Erreur lors de la vérification du statut.";
